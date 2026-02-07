@@ -464,7 +464,8 @@
             const card = document.createElement('div');
             card.className = 'group-card';
             card.onclick = () => {
-                alert(`Group details coming soon!\n\nGroup: ${group.name}\nMembers: ${group.members.length}`);
+    window.location.href = `group-details.html?id=${id}`;
+};
             };
 
             card.innerHTML = `
