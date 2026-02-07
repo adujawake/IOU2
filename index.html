@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IOU2 - Track Expenses Together</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            max-width: 400px;
+            width: 100%;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 30px;
+            text-align: center;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .form-container {
+            padding: 40px 30px;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 600;
+            color: #999;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s;
+            outline: none;
+        }
+
+        .form-group input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group input:disabled {
+            background-color: #f5f5f5;
+            cursor: not-allowed;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .form-content {
+            display: none;
+        }
+
+        .form-content.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            font-size: 14px;
+        }
+
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+
+        .footer-text {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 13px;
+        }
+
+        .emoji {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.6s linear infinite;
+            margin-left: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="emoji">💰</div>
+            <h1>IOU2</h1>
+            <p>Because we share everything</p>
+        </div>
+
+        <div class="form-container">
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('login')">Login</div>
+                <div class="tab" onclick="switchTab('signup')">Sign Up</div>
+            </div>
+
+            <div id="message" class="message"></div>
+
+            <!-- Login Form -->
+            <div id="login-form" class="form-content active">
+                <form onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label for="login-email">Email Address</label>
+                        <input type="email" id="login-email" placeholder="you@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" placeholder="Enter your password" required>
+                    </div>
+                    <button type="submit" class="btn" id="login-btn">Login</button>
+                </form>
+                <div class="footer-text">
+                    Welcome back! Ready to track those IOUs? 😊
+                </div>
+            </div>
+
+            <!-- Signup Form -->
+            <div id="signup-form" class="form-content">
+                <form onsubmit="handleSignup(event)">
+                    <div class="form-group">
+                        <label for="signup-name">Full Name</label>
+                        <input type="text" id="signup-name" placeholder="Your name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-email">Email Address</label>
+                        <input type="email" id="signup-email" placeholder="you@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-password">Password</label>
+                        <input type="password" id="signup-password" placeholder="Create a password" required minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-confirm">Confirm Password</label>
+                        <input type="password" id="signup-confirm" placeholder="Confirm your password" required>
+                    </div>
+                    <button type="submit" class="btn" id="signup-btn">Create Account</button>
+                </form>
+                <div class="footer-text">
+                    Join IOU2 and start tracking expenses! 🚀
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        // Import Firebase SDKs
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
+        // Your Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyD3-E6NFi93uiW3V0_8X9Cew0-L5FjQq8E",
+            authDomain: "iou2-b3a70.firebaseapp.com",
+            projectId: "iou2-b3a70",
+            storageBucket: "iou2-b3a70.firebasestorage.app",
+            messagingSenderId: "673231587688",
+            appId: "1:673231587688:web:268718d93bd58468996edd",
+            measurementId: "G-XSNC9M893J"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // Make functions globally available
+        window.handleLogin = handleLogin;
+        window.handleSignup = handleSignup;
+        window.switchTab = switchTab;
+
+        // Switch between Login and Signup tabs
+        function switchTab(tab) {
+            // Update tab styling
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Show the correct form
+            document.querySelectorAll('.form-content').forEach(f => f.classList.remove('active'));
+            document.getElementById(tab + '-form').classList.add('active');
+            
+            // Hide any messages
+            hideMessage();
+        }
+
+        // Show message to user
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = text;
+            messageDiv.className = 'message ' + type;
+        }
+
+        // Hide message
+        function hideMessage() {
+            const messageDiv = document.getElementById('message');
+            messageDiv.style.display = 'none';
+        }
+
+        // Handle Login
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const loginBtn = document.getElementById('login-btn');
+            
+            try {
+                // Disable button and show loading
+                loginBtn.disabled = true;
+                loginBtn.innerHTML = 'Logging in...<span class="loading"></span>';
+                hideMessage();
+                
+                // Sign in with Firebase
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                
+                showMessage('🎉 Login successful! Welcome back!', 'success');
+                
+                // Redirect to dashboard after 1.5 seconds
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 1500);
+                
+            } catch (error) {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Login';
+                
+                // Handle different error types
+                let errorMessage = 'Login failed. Please try again.';
+                
+                if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
+                    errorMessage = '❌ Invalid email or password. Please try again.';
+                } else if (error.code === 'auth/user-not-found') {
+                    errorMessage = '❌ No account found with this email. Please sign up first.';
+                } else if (error.code === 'auth/too-many-requests') {
+                    errorMessage = '❌ Too many failed attempts. Please try again later.';
+                } else if (error.code === 'auth/network-request-failed') {
+                    errorMessage = '❌ Network error. Please check your internet connection.';
+                }
+                
+                showMessage(errorMessage, 'error');
+                console.error('Login error:', error);
+            }
+        }
+
+        // Handle Signup
+        async function handleSignup(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('signup-name').value;
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const confirm = document.getElementById('signup-confirm').value;
+            const signupBtn = document.getElementById('signup-btn');
+            
+            // Check if passwords match
+            if (password !== confirm) {
+                showMessage('❌ Passwords do not match! Please try again.', 'error');
+                return;
+            }
+            
+            // Check password length
+            if (password.length < 6) {
+                showMessage('❌ Password must be at least 6 characters long.', 'error');
+                return;
+            }
+            
+            try {
+                // Disable button and show loading
+                signupBtn.disabled = true;
+                signupBtn.innerHTML = 'Creating account...<span class="loading"></span>';
+                hideMessage();
+                
+                // Create user with Firebase
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                
+                // Update user profile with name
+                await updateProfile(user, {
+                    displayName: name
+                });
+                
+                showMessage('🎉 Account created successfully! Welcome to IOU2!', 'success');
+                
+                // Redirect to dashboard after 1.5 seconds
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 1500);
+                
+            } catch (error) {
+                signupBtn.disabled = false;
+                signupBtn.textContent = 'Create Account';
+                
+                // Handle different error types
+                let errorMessage = 'Signup failed. Please try again.';
+                
+                if (error.code === 'auth/email-already-in-use') {
+                    errorMessage = '❌ This email is already registered. Please login instead.';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = '❌ Invalid email address. Please check and try again.';
+                } else if (error.code === 'auth/weak-password') {
+                    errorMessage = '❌ Password is too weak. Use at least 6 characters.';
+                } else if (error.code === 'auth/network-request-failed') {
+                    errorMessage = '❌ Network error. Please check your internet connection.';
+                }
+                
+                showMessage(errorMessage, 'error');
+                console.error('Signup error:', error);
+            }
+        }
+    </script>
+</body>
+</html>
+
