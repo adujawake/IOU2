@@ -81,6 +81,12 @@
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
         }
 
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .content {
             background: white;
             border-radius: 15px;
@@ -273,6 +279,13 @@
             display: block;
         }
 
+        .message.warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+            display: block;
+        }
+
         .loading {
             text-align: center;
             padding: 40px;
@@ -355,7 +368,7 @@
                     <!-- Members will be added here -->
                 </div>
                 
-                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 20px;">
+                <button type="submit" class="btn btn-primary" id="create-group-btn" style="width: 100%; margin-top: 20px;">
                     Create Group
                 </button>
             </form>
@@ -386,6 +399,7 @@
 
         let currentUser = null;
         let members = [];
+        let userGroups = [];
 
         // Make functions globally available
         window.openCreateGroupModal = openCreateGroupModal;
@@ -416,6 +430,12 @@
                 const q = query(groupsRef, where('members', 'array-contains', currentUser.email));
                 const querySnapshot = await getDocs(q);
 
+                // Store groups for duplicate checking
+                userGroups = [];
+                querySnapshot.forEach((doc) => {
+                    userGroups.push({ id: doc.id, ...doc.data() });
+                });
+
                 loading.style.display = 'none';
                 groupsContainer.style.display = 'block';
 
@@ -434,7 +454,8 @@
                 }
             } catch (error) {
                 console.error('Error loading groups:', error);
-                showMessage('Error loading groups. Please refresh the page.', 'error', 'modal-message');
+                document.getElementById('loading').innerHTML = 
+                    '<p style="color: #721c24;">Error loading groups. Please refresh the page.</p>';
             }
         }
 
@@ -460,6 +481,9 @@
             document.getElementById('create-group-modal').classList.add('active');
             members = [currentUser.email]; // Always include current user
             updateMemberList();
+            hideMessage('modal-message');
+            document.getElementById('group-name').value = '';
+            document.getElementById('member-email').value = '';
         }
 
         // Close create group modal
@@ -477,17 +501,17 @@
             const email = emailInput.value.trim().toLowerCase();
 
             if (!email) {
-                showMessage('Please enter an email address', 'error', 'modal-message');
+                showMessage('⚠️ Please enter an email address', 'warning', 'modal-message');
                 return;
             }
 
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                showMessage('Please enter a valid email address', 'error', 'modal-message');
+                showMessage('⚠️ Please enter a valid email address', 'warning', 'modal-message');
                 return;
             }
 
             if (members.includes(email)) {
-                showMessage('This member is already added', 'error', 'modal-message');
+                showMessage('⚠️ This member is already added', 'warning', 'modal-message');
                 return;
             }
 
@@ -523,23 +547,42 @@
             updateMemberList();
         };
 
+        // Check if group name already exists
+        function checkDuplicateGroupName(groupName) {
+            const normalizedName = groupName.trim().toLowerCase();
+            return userGroups.some(group => 
+                group.name.toLowerCase() === normalizedName
+            );
+        }
+
         // Handle create group form submission
         async function handleCreateGroup(event) {
             event.preventDefault();
 
             const groupName = document.getElementById('group-name').value.trim();
+            const createBtn = document.getElementById('create-group-btn');
 
             if (!groupName) {
-                showMessage('Please enter a group name', 'error', 'modal-message');
+                showMessage('⚠️ Please enter a group name', 'warning', 'modal-message');
+                return;
+            }
+
+            // Check for duplicate group name
+            if (checkDuplicateGroupName(groupName)) {
+                showMessage(`⚠️ You already have a group named "${groupName}". Please choose a different name.`, 'warning', 'modal-message');
                 return;
             }
 
             if (members.length === 0) {
-                showMessage('Please add at least one member (yourself)', 'error', 'modal-message');
+                showMessage('⚠️ Please add at least one member (yourself)', 'warning', 'modal-message');
                 return;
             }
 
             try {
+                // Disable button while creating
+                createBtn.disabled = true;
+                createBtn.textContent = 'Creating...';
+
                 // Create group in Firestore
                 const groupData = {
                     name: groupName,
@@ -551,16 +594,21 @@
 
                 await addDoc(collection(db, 'groups'), groupData);
 
-                showMessage('🎉 Group created successfully!', 'success', 'modal-message');
+                showMessage(`🎉 Group "${groupName}" created successfully!`, 'success', 'modal-message');
 
+                // Keep modal open for 2 seconds so user can see success message
                 setTimeout(() => {
                     closeCreateGroupModal();
-                    loadGroups();
-                }, 1500);
+                    loadGroups(); // Reload groups to show the new one
+                    createBtn.disabled = false;
+                    createBtn.textContent = 'Create Group';
+                }, 2000);
 
             } catch (error) {
                 console.error('Error creating group:', error);
-                showMessage('Error creating group. Please try again.', 'error', 'modal-message');
+                createBtn.disabled = false;
+                createBtn.textContent = 'Create Group';
+                showMessage('❌ Error creating group. Please try again.', 'error', 'modal-message');
             }
         }
 
